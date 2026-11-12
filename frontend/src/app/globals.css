@@ -23,5 +23,7 @@ body {
 }
 button, input { font: inherit; }
 button:not(:disabled) { cursor: pointer; }
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear { display: none; }
 :focus-visible { outline: 2px solid var(--academy); outline-offset: 3px; }
 ::selection { color: white; background: var(--academy); }
