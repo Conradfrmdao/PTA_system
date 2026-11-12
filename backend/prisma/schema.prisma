@@ -1,0 +1,319 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MENTOR
+  INSTRUCTOR
+  LEARNER
+  ALUMNI
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED
+  WAITLISTED
+  REJECTED
+}
+
+enum LearnerStatus {
+  ACTIVE
+  PAUSED
+  GRADUATED
+  INACTIVE
+}
+
+enum CohortStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum ProgressStatus {
+  ON_TRACK
+  NEEDS_ATTENTION
+  AT_RISK
+}
+
+model User {
+  id                        String              @id @default(cuid())
+  email                     String              @unique
+  passwordHash              String
+  firstName                 String
+  lastName                  String
+  phone                     String?
+  role                      Role
+  isActive                  Boolean             @default(true)
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+  learner                   Learner?
+  applicationsReviewed      Application[]       @relation("ApplicationReviewedBy")
+  cohortAssignments         CohortMentor[]
+  attendanceSessionsCreated AttendanceSession[] @relation("AttendanceSessionCreatedBy")
+  attendanceRecordsMarked   AttendanceRecord[]  @relation("AttendanceRecordMarkedBy")
+  moduleCompletionsMarked   ModuleCompletion[]  @relation("ModuleCompletionMarkedBy")
+  refreshTokens             RefreshToken[]
+  auditLogs                 AuditLog[]
+
+  @@index([role, isActive])
+  @@index([createdAt])
+}
+
+model Application {
+  id               String            @id @default(cuid())
+  firstName        String
+  lastName         String
+  email            String
+  phone            String?
+  programId        String
+  status           ApplicationStatus @default(SUBMITTED)
+  reviewedByUserId String?
+  reviewNote       String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  program          Program           @relation(fields: [programId], references: [id], onDelete: Restrict)
+  reviewedBy       User?             @relation("ApplicationReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  acceptedLearner  Learner?
+
+  @@index([status, createdAt])
+  @@index([email])
+  @@index([programId])
+}
+
+model Learner {
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  applicationId     String?            @unique
+  programId         String
+  status            LearnerStatus      @default(ACTIVE)
+  enrolledAt        DateTime           @default(now())
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  user              User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  application       Application?       @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  program           Program            @relation(fields: [programId], references: [id], onDelete: Restrict)
+  cohortEnrollments CohortEnrollment[]
+  attendanceRecords AttendanceRecord[]
+  progressSnapshots LearnerProgress[]
+  moduleCompletions ModuleCompletion[]
+
+  @@index([programId, status])
+  @@index([status, enrolledAt])
+}
+
+model Program {
+  id              String        @id @default(cuid())
+  name            String
+  description     String?
+  isActive        Boolean       @default(true)
+  progressWeights Json          @default("{\"attendance\":50,\"courseCompletion\":50}")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  applications    Application[]
+  learners        Learner[]
+  courses         Course[]
+  cohorts         Cohort[]
+
+  @@index([isActive, name])
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  programId   String
+  name        String
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Restrict)
+  modules     Module[]
+
+  @@index([programId, isActive, sortOrder])
+}
+
+model Module {
+  id          String             @id @default(cuid())
+  courseId    String
+  name        String
+  description String?
+  sortOrder   Int                @default(0)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  course      Course             @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  lessons     Lesson[]
+  completions ModuleCompletion[]
+
+  @@index([courseId, isActive, sortOrder])
+}
+
+model Lesson {
+  id        String   @id @default(cuid())
+  moduleId  String
+  title     String
+  content   String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Restrict)
+
+  @@index([moduleId, isActive, sortOrder])
+}
+
+model Cohort {
+  id                 String              @id @default(cuid())
+  programId          String
+  name               String
+  startDate          DateTime
+  endDate            DateTime
+  status             CohortStatus        @default(PLANNED)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  program            Program             @relation(fields: [programId], references: [id], onDelete: Restrict)
+  enrollments        CohortEnrollment[]
+  mentors            CohortMentor[]
+  attendanceSessions AttendanceSession[]
+  progressSnapshots  LearnerProgress[]
+
+  @@index([programId, status])
+  @@index([startDate, endDate])
+}
+
+model CohortEnrollment {
+  id        String    @id @default(cuid())
+  cohortId  String
+  learnerId String
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  cohort    Cohort    @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+  learner   Learner   @relation(fields: [learnerId], references: [id], onDelete: Restrict)
+
+  @@unique([cohortId, learnerId])
+  @@index([learnerId, isActive])
+  @@index([cohortId, isActive])
+}
+
+model CohortMentor {
+  id         String   @id @default(cuid())
+  cohortId   String
+  userId     String
+  isPrimary  Boolean  @default(false)
+  assignedAt DateTime @default(now())
+  cohort     Cohort   @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([cohortId, userId])
+  @@index([userId, cohortId])
+}
+
+model AttendanceSession {
+  id          String             @id @default(cuid())
+  cohortId    String
+  title       String?
+  sessionDate DateTime
+  createdById String
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  cohort      Cohort             @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+  createdBy   User               @relation("AttendanceSessionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  records     AttendanceRecord[]
+
+  @@index([cohortId, sessionDate])
+}
+
+model AttendanceRecord {
+  id         String            @id @default(cuid())
+  sessionId  String
+  learnerId  String
+  status     AttendanceStatus
+  note       String?
+  markedById String
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  session    AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  learner    Learner           @relation(fields: [learnerId], references: [id], onDelete: Restrict)
+  markedBy   User              @relation("AttendanceRecordMarkedBy", fields: [markedById], references: [id], onDelete: Restrict)
+
+  @@unique([sessionId, learnerId])
+  @@index([learnerId, status])
+}
+
+model ModuleCompletion {
+  id             String   @id @default(cuid())
+  learnerId      String
+  moduleId       String
+  completedAt    DateTime @default(now())
+  markedByUserId String?
+  createdAt      DateTime @default(now())
+  learner        Learner  @relation(fields: [learnerId], references: [id], onDelete: Restrict)
+  module         Module   @relation(fields: [moduleId], references: [id], onDelete: Restrict)
+  markedBy       User?    @relation("ModuleCompletionMarkedBy", fields: [markedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([learnerId, moduleId])
+  @@index([learnerId, completedAt])
+}
+
+model LearnerProgress {
+  id           String         @id @default(cuid())
+  learnerId    String
+  cohortId     String?
+  overallScore Float
+  status       ProgressStatus
+  components   Json
+  calculatedAt DateTime       @default(now())
+  learner      Learner        @relation(fields: [learnerId], references: [id], onDelete: Restrict)
+  cohort       Cohort?        @relation(fields: [cohortId], references: [id], onDelete: SetNull)
+
+  @@index([learnerId, calculatedAt])
+  @@index([cohortId, status, calculatedAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId, createdAt])
+}
