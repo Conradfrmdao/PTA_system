@@ -1,6 +1,6 @@
 import { ArrowRight, Check, MoveRight } from 'lucide-react';
 import Link from 'next/link';
-import { AcademyMark } from '@/components/brand/academy-mark';
+import { AcademyMark, FullAcademyLogo } from '@/components/brand/academy-mark';
 
 const journey = [
   ['01', 'Apply', 'One clear entry point for every prospective learner.'],
@@ -78,6 +78,14 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+      <footer className="border-t border-[#191716]/10 bg-white px-5 py-8">
+        <div className="mx-auto flex max-w-[1180px] flex-col items-center justify-between gap-5 sm:flex-row">
+          <FullAcademyLogo className="w-[112px]" />
+          <p className="text-center text-xs font-semibold text-[#817a75] sm:text-right">
+            Pivosoft Technology Academy<br />Learn. Build. Innovate. Progress.
+          </p>
+        </div>
+      </footer>
     </main>
   );
 }

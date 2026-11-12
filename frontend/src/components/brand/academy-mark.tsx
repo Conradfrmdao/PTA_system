@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 export function AcademyMark({ inverse = false, compact = false, className }: {
@@ -8,10 +9,17 @@ export function AcademyMark({ inverse = false, compact = false, className }: {
   return (
     <div className={cn('inline-flex items-center gap-3', className)}>
       <span className={cn(
-        'grid h-10 w-10 place-items-center rounded-[14px] border text-[12px] font-extrabold tracking-[-0.04em]',
-        inverse ? 'border-white/25 bg-white text-[#65000b]' : 'border-[#65000b]/15 bg-[#65000b] text-white',
+        'grid h-11 w-11 shrink-0 place-items-center rounded-[14px] border p-1.5',
+        inverse ? 'border-white/20 bg-white' : 'border-[#65000b]/10 bg-white',
       )}>
-        PTA
+        <Image
+          src="/brand/pivosoft-academy-mark.png"
+          alt=""
+          width={44}
+          height={44}
+          className="h-full w-full object-contain"
+          priority
+        />
       </span>
       {!compact && (
         <span className="leading-[1.05]">
@@ -24,5 +32,18 @@ export function AcademyMark({ inverse = false, compact = false, className }: {
         </span>
       )}
     </div>
+  );
+}
+
+export function FullAcademyLogo({ className }: { className?: string }) {
+  return (
+    <Image
+      src="/brand/pivosoft-academy-logo.png"
+      alt="Pivosoft Technology Academy"
+      width={180}
+      height={180}
+      className={cn('h-auto w-[150px] object-contain', className)}
+      priority
+    />
   );
 }
