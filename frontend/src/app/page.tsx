@@ -11,10 +11,11 @@ export default function HomePage() {
       <header className="relative z-20 border-b border-[#191716]/8 bg-[#f7f4ef]/95">
         <div className="mx-auto flex h-20 max-w-[1240px] items-center justify-between px-5 sm:px-8">
           <AcademyMark />
-          <nav className="flex items-center gap-5" aria-label="Primary navigation">
+          <nav className="flex items-center gap-4 sm:gap-5" aria-label="Primary navigation">
             <a href="#how-it-works" className="hidden text-sm font-bold text-[#5f5955] transition hover:text-[#65000b] sm:block">
               How it works
             </a>
+            <Link href="/apply" className="hidden text-sm font-bold text-[#65000b] transition hover:text-[#470008] sm:block">Apply</Link>
             <Link href="/login" className="inline-flex h-11 items-center gap-2 rounded-full bg-[#191716] px-5 text-sm font-bold text-white transition hover:bg-[#65000b]">
               Sign in <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
@@ -62,6 +63,9 @@ export default function HomePage() {
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link href="/login" className="inline-flex h-14 items-center gap-3 rounded-full bg-[#65000b] px-7 text-[15px] font-extrabold text-white shadow-[0_18px_40px_-22px_rgba(101,0,11,.8)] transition hover:bg-[#470008]">
                 Open your workspace <MoveRight className="h-[18px] w-[18px]" aria-hidden="true" />
+              </Link>
+              <Link href="/apply" className="inline-flex h-14 items-center rounded-full border border-[#191716]/20 bg-[#f7f4ef]/75 px-6 text-[15px] font-extrabold text-[#191716] backdrop-blur-sm transition hover:border-[#65000b]/40 hover:text-[#65000b]">
+                Apply to join
               </Link>
               <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#625c57]">
                 <Check className="h-4 w-4 text-[#0f766e]" aria-hidden="true" /> Built around the learner journey
