@@ -29,7 +29,7 @@ export const validateEnvironment = (config: Record<string, unknown>): Environmen
     FRONTEND_URL: required(config, 'FRONTEND_URL'),
     JWT_ACCESS_SECRET: accessSecret,
     JWT_REFRESH_SECRET: refreshSecret,
-    ACCESS_TOKEN_TTL: String(config['ACCESS_TOKEN_TTL'] ?? '15m'),
+    ACCESS_TOKEN_TTL: typeof config['ACCESS_TOKEN_TTL'] === 'string' ? config['ACCESS_TOKEN_TTL'] : '15m',
     REFRESH_TOKEN_TTL_DAYS: Number(config['REFRESH_TOKEN_TTL_DAYS'] ?? 7),
   };
 };
