@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, ChevronRight, LayoutDashboard, LogOut, Menu, ShieldCheck, X } from 'lucide-react';
+import { BarChart3, BookOpenCheck, ChevronRight, ClipboardCheck, FileText, GraduationCap, LayoutDashboard, LogOut, Menu, School, ShieldCheck, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -14,6 +14,35 @@ const roleLabels = {
   INSTRUCTOR: 'Instructor',
   LEARNER: 'Learner',
   ALUMNI: 'Alumni',
+} as const;
+
+const roleNavigation = {
+  ADMIN: [
+    ['/dashboard', 'Overview', LayoutDashboard],
+    ['/dashboard/applications', 'Applications', FileText],
+    ['/dashboard/learners', 'Learners', Users],
+    ['/dashboard/cohorts', 'Cohorts', School],
+    ['/dashboard/attendance', 'Attendance', ClipboardCheck],
+    ['/dashboard/progress', 'Progress', BookOpenCheck],
+    ['/dashboard/reports', 'Reports', BarChart3],
+  ],
+  MENTOR: [
+    ['/dashboard', 'Overview', LayoutDashboard],
+    ['/dashboard/learners', 'My learners', Users],
+    ['/dashboard/attendance', 'Attendance', ClipboardCheck],
+    ['/dashboard/progress', 'Progress', BookOpenCheck],
+  ],
+  INSTRUCTOR: [
+    ['/dashboard', 'Overview', LayoutDashboard],
+    ['/dashboard/learners', 'My learners', Users],
+    ['/dashboard/attendance', 'Attendance', ClipboardCheck],
+    ['/dashboard/progress', 'Progress', BookOpenCheck],
+  ],
+  LEARNER: [
+    ['/dashboard', 'Overview', LayoutDashboard],
+    ['/dashboard/my-learning', 'My learning', GraduationCap],
+  ],
+  ALUMNI: [['/dashboard', 'Overview', LayoutDashboard]],
 } as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -35,18 +64,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <AcademyMark inverse className="px-2" />
       <nav className="mt-12" aria-label="Workspace">
         <p className="px-3 text-[10px] font-extrabold uppercase tracking-[.16em] text-white/40">Workspace</p>
-        <Link href="/dashboard" onClick={() => setOpen(false)} className={`mt-3 flex h-12 items-center gap-3 rounded-2xl px-3 text-sm font-bold transition ${pathname === '/dashboard' ? 'bg-white text-[#65000b]' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
-          <LayoutDashboard className="h-[18px] w-[18px]" /> Overview
-        </Link>
-      </nav>
-
-      <div className="mt-8 rounded-[22px] border border-white/10 bg-white/[.06] p-4">
-        <div className="flex items-center gap-2 text-white/85">
-          <BookOpen className="h-4 w-4" />
-          <p className="text-xs font-extrabold">Stage one is ready</p>
+        <div className="mt-3 space-y-1">
+          {roleNavigation[user.role].map(([href, label, Icon]) => {
+            const active = href === '/dashboard' ? pathname === href : pathname.startsWith(href);
+            return (
+              <Link key={href} href={href} onClick={() => setOpen(false)} className={`flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${active ? 'bg-white text-[#65000b]' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
+                <Icon className="h-[18px] w-[18px]" /> {label}
+              </Link>
+            );
+          })}
         </div>
-        <p className="mt-2 text-[11.5px] font-medium leading-5 text-white/50">Your secure workspace is connected. Academy modules arrive in focused stages.</p>
-      </div>
+      </nav>
 
       <div className="mt-auto">
         <div className="mb-3 flex items-center gap-3 rounded-2xl bg-black/10 p-3">

@@ -1,0 +1,19 @@
+'use client';
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Check, LoaderCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { EmptyState, StatusPill, WorkspaceHeader } from '@/components/dashboard/workspace-ui';
+import { getApiError } from '@/lib/api/client';
+import { workspaceApi } from '@/lib/api/workspace';
+
+export default function ProgressPage() {
+  const client = useQueryClient(); const [cohortId, setCohortId] = useState('');
+  const { data: cohorts = [] } = useQuery({ queryKey: ['cohorts'], queryFn: workspaceApi.cohorts });
+  useEffect(() => { if (!cohortId && cohorts[0]) setCohortId(cohorts[0].id); }, [cohortId, cohorts]);
+  const { data, isLoading } = useQuery({ queryKey: ['progress', cohortId], queryFn: () => workspaceApi.progressCohort(cohortId), enabled: Boolean(cohortId) });
+  const update = useMutation({ mutationFn: ({ learnerId, moduleId, completed }: { learnerId: string; moduleId: string; completed: boolean }) => workspaceApi.setCompletion(learnerId, moduleId, completed), onSuccess: () => { void client.invalidateQueries({ queryKey: ['progress', cohortId] }); void client.invalidateQueries({ queryKey: ['learners'] }); toast.success('Progress updated'); }, onError: (error) => toast.error(getApiError(error).message) });
+  const modules = data?.program.courses.flatMap((course) => course.modules.map((module) => ({ ...module, course: course.name }))) ?? [];
+  return <main className="px-5 pb-12 pt-7 sm:px-8 lg:px-10 xl:px-14"><WorkspaceHeader eyebrow="Learning delivery" title="Progress" description="Mark completed modules. Attendance and course completion are combined into the learner’s current progress signal." action={<select value={cohortId} onChange={(event) => setCohortId(event.target.value)} className="h-11 rounded-full border border-[#191716]/10 bg-white px-5 text-sm font-bold"><option value="">Select cohort</option>{cohorts.map((cohort) => <option key={cohort.id} value={cohort.id}>{cohort.name}</option>)}</select>} />{isLoading ? <LoaderCircle className="mt-10 animate-spin" /> : !data ? <div className="mt-7"><EmptyState>No cohort selected.</EmptyState></div> : <section className="mt-7 space-y-5">{data.enrollments.map(({ learner }) => { const completed = new Set(learner.moduleCompletions.map((item) => item.moduleId)); const snapshot = learner.progressSnapshots[0]; return <article key={learner.id} className="rounded-[26px] border border-[#191716]/10 bg-white p-5 sm:p-6"><div className="flex flex-col justify-between gap-3 border-b border-[#191716]/10 pb-5 sm:flex-row sm:items-center"><div><h2 className="font-extrabold">{learner.user.firstName} {learner.user.lastName}</h2><p className="text-xs text-[#817a75]">{completed.size} of {modules.length} modules complete</p></div><div className="flex items-center gap-3"><strong className="text-2xl">{snapshot ? `${snapshot.overallScore}%` : '—'}</strong><StatusPill value={snapshot?.status ?? 'NOT SCORED'} /></div></div><div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{modules.map((module) => { const done = completed.has(module.id); return <button key={module.id} onClick={() => update.mutate({ learnerId: learner.id, moduleId: module.id, completed: !done })} className={`flex items-center gap-3 rounded-2xl border p-3 text-left ${done ? 'border-emerald-200 bg-emerald-50' : 'border-[#191716]/10'}`}><span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${done ? 'bg-emerald-600 text-white' : 'border border-[#191716]/20'}`}>{done && <Check className="h-3.5 w-3.5" />}</span><span><strong className="block text-xs">{module.name}</strong><span className="text-[10px] text-[#817a75]">{module.course}</span></span></button>; })}</div></article>; })}</section>}</main>;
+}
