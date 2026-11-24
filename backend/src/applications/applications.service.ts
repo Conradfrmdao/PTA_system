@@ -97,7 +97,7 @@ export class ApplicationsService {
       }
     }
 
-    temporaryPassword = `Pta!${randomBytes(6).toString('base64url')}`;
+    temporaryPassword = `Pta-${randomBytes(5).toString('hex')}`;
     const passwordHash = await argon2.hash(temporaryPassword);
     const result = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({

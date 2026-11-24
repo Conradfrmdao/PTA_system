@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { LoginDto } from './dto/login.dto.js';
 
@@ -104,7 +104,7 @@ export class AuthService {
     const days = this.config.get<number>('REFRESH_TOKEN_TTL_DAYS') ?? 7;
     const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
     const raw = await this.jwtService.signAsync(
-      { sub: userId, type: 'refresh' },
+      { sub: userId, type: 'refresh', jti: randomUUID() },
       { secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET'), expiresIn: `${days}d` },
     );
     return { raw, record: { userId, tokenHash: this.hashToken(raw), expiresAt } };

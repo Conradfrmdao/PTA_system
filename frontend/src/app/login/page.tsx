@@ -59,6 +59,9 @@ export default function LoginPage() {
       </section>
 
       <section className="flex min-h-dvh min-w-0 items-center justify-center bg-[#f7f4ef] px-5 py-10 sm:px-8">
+        <Link href="/" className="absolute right-8 top-7 hidden items-center gap-2 text-sm font-extrabold text-[#625c57] transition hover:text-[#65000b] lg:inline-flex">
+          <ArrowLeft className="h-4 w-4" /> Back to home
+        </Link>
         <div className="min-w-0 w-full max-w-[440px]">
           <div className="mb-10 flex items-center justify-between lg:hidden">
             <AcademyMark />

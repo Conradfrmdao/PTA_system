@@ -1,4 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import * as argon2 from 'argon2';
+import { randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { AuthUser } from '../auth/types/auth-user.js';
 import type { AssignCohortDto, AssignMentorDto, CreateCohortDto } from './dto/academy.dto.js';
@@ -99,5 +101,30 @@ export class AcademyService {
     });
     await this.prisma.auditLog.create({ data: { actorId: actor.id, action: 'COHORT_MENTOR_ASSIGNED', entityType: 'Cohort', entityId: cohortId, metadata: { userId: dto.userId } } });
     return assignment;
+  }
+
+  async resetLearnerPassword(learnerId: string, actor: AuthUser) {
+    const learner = await this.prisma.learner.findUnique({
+      where: { id: learnerId },
+      include: { user: { select: { id: true, email: true, isActive: true } } },
+    });
+    if (!learner) throw new NotFoundException('Learner not found');
+    if (!learner.user.isActive) throw new BadRequestException('The learner account is inactive');
+
+    const temporaryPassword = `Pta-${randomBytes(5).toString('hex')}`;
+    const passwordHash = await argon2.hash(temporaryPassword);
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: learner.user.id }, data: { passwordHash } }),
+      this.prisma.refreshToken.updateMany({ where: { userId: learner.user.id, revokedAt: null }, data: { revokedAt: new Date() } }),
+      this.prisma.auditLog.create({
+        data: {
+          actorId: actor.id,
+          action: 'LEARNER_PASSWORD_RESET',
+          entityType: 'Learner',
+          entityId: learnerId,
+        },
+      }),
+    ]);
+    return { email: learner.user.email, temporaryPassword };
   }
 }

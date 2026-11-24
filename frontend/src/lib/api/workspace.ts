@@ -17,6 +17,7 @@ export type Learner = {
 export type Application = {
   id: string; firstName: string; lastName: string; email: string; phone: string | null; status: string; createdAt: string; reviewNote: string | null;
   program: { id: string; name: string };
+  acceptedLearner?: { id: string; status: string } | null;
 };
 export type ApplicationList = { items: Application[]; total: number; page: number; limit: number; totalPages: number };
 
@@ -30,6 +31,7 @@ export const workspaceApi = {
   createCohort: (input: { name: string; programId: string; startDate: string; endDate: string; status?: string }) => unwrap<Cohort>(api.post('/academy/cohorts', input)),
   learners: (cohortId?: string) => unwrap<Learner[]>(api.get('/academy/learners', { params: cohortId ? { cohortId } : {} })),
   assignCohort: (learnerId: string, cohortId: string) => unwrap(api.patch(`/academy/learners/${learnerId}/cohort`, { cohortId })),
+  resetLearnerPassword: (learnerId: string) => unwrap<{ email: string; temporaryPassword: string }>(api.post(`/academy/learners/${learnerId}/reset-password`)),
   attendanceRegister: (cohortId: string) => unwrap<AttendanceRegister>(api.get(`/attendance/cohorts/${cohortId}`)),
   createAttendanceSession: (input: { cohortId: string; sessionDate: string; title?: string }) => unwrap<{ id: string }>(api.post('/attendance/sessions', input)),
   markAttendance: (sessionId: string, records: { learnerId: string; status: string }[]) => unwrap<AttendanceRegister>(api.put(`/attendance/sessions/${sessionId}/records`, { records })),
