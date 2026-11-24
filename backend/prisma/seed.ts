@@ -23,6 +23,19 @@ async function main() {
     data: { name: 'Software Development', description: 'Practical full-stack software development.' },
   });
 
+  const course = await prisma.course.upsert({
+    where: { id: 'seed-course-foundations' },
+    update: { programId: program.id, name: 'Software Development Foundations', isActive: true },
+    create: { id: 'seed-course-foundations', programId: program.id, name: 'Software Development Foundations', sortOrder: 1 },
+  });
+  for (const [index, name] of ['Web foundations', 'JavaScript essentials', 'Backend APIs', 'Database design', 'Team project'].entries()) {
+    await prisma.module.upsert({
+      where: { id: `seed-module-${index + 1}` },
+      update: { courseId: course.id, name, sortOrder: index + 1, isActive: true },
+      create: { id: `seed-module-${index + 1}`, courseId: course.id, name, sortOrder: index + 1 },
+    });
+  }
+
   const existingCohort = await prisma.cohort.findFirst({ where: { name: 'November 2026', programId: program.id } });
   const cohort = existingCohort ?? await prisma.cohort.create({
     data: {

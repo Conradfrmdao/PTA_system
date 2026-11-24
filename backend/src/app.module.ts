@@ -4,6 +4,11 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ApplicationsModule } from './applications/applications.module.js';
+import { AcademyModule } from './academy/academy.module.js';
+import { AttendanceModule } from './attendance/attendance.module.js';
+import { ProgressModule } from './progress/progress.module.js';
+import { PortalModule } from './portal/portal.module.js';
+import { ReportsModule } from './reports/reports.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 import { validateEnvironment } from './config/env.js';
@@ -17,6 +22,11 @@ import { ProgramsModule } from './programs/programs.module.js';
     AuthModule,
     ProgramsModule,
     ApplicationsModule,
+    AcademyModule,
+    AttendanceModule,
+    ProgressModule,
+    PortalModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [
