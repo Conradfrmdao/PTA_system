@@ -9,6 +9,7 @@ import { AttendanceModule } from './attendance/attendance.module.js';
 import { ProgressModule } from './progress/progress.module.js';
 import { PortalModule } from './portal/portal.module.js';
 import { ReportsModule } from './reports/reports.module.js';
+import { RegistrationsModule } from './registrations/registrations.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 import { validateEnvironment } from './config/env.js';
@@ -27,6 +28,7 @@ import { ProgramsModule } from './programs/programs.module.js';
     ProgressModule,
     PortalModule,
     ReportsModule,
+    RegistrationsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -38,4 +38,11 @@ export class ApplicationsController {
   review(@Param('id') id: string, @Body() dto: ReviewApplicationDto, @CurrentUser() user: AuthUser) {
     return this.applicationsService.review(id, dto, user);
   }
+
+  @Post(':id/invitation')
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles('ADMIN')
+  reissueInvitation(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.applicationsService.reissueInvitation(id, user);
+  }
 }

@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import * as argon2 from 'argon2';
-import { randomBytes } from 'node:crypto';
+import { ConfigService } from '@nestjs/config';
+import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { AuthUser } from '../auth/types/auth-user.js';
 import type { CreateApplicationDto } from './dto/create-application.dto.js';
@@ -24,7 +24,10 @@ const applicationInclude = {
 
 @Injectable()
 export class ApplicationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
 
   async create(dto: CreateApplicationDto) {
     const program = await this.prisma.program.findFirst({ where: { id: dto.programId, isActive: true } });
@@ -77,7 +80,6 @@ export class ApplicationsService {
     if (!application) throw new NotFoundException('Application not found');
     if (application.status === 'ACCEPTED') throw new ConflictException('This application has already been accepted');
 
-    let temporaryPassword: string | undefined;
     if (dto.status !== 'ACCEPTED') {
       const updated = await this.prisma.application.update({
         where: { id },
@@ -97,39 +99,65 @@ export class ApplicationsService {
       }
     }
 
-    temporaryPassword = `Pta-${randomBytes(5).toString('hex')}`;
-    const passwordHash = await argon2.hash(temporaryPassword);
+    const invitation = this.createInvitation();
     const result = await this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email: application.email,
-          firstName: application.firstName,
-          lastName: application.lastName,
-          phone: application.phone,
-          role: 'LEARNER',
-          passwordHash,
-        },
-      });
-      const learner = await tx.learner.create({
-        data: { userId: user.id, applicationId: application.id, programId: application.programId },
-      });
-      if (dto.cohortId) {
-        await tx.cohortEnrollment.create({ data: { cohortId: dto.cohortId, learnerId: learner.id } });
-      }
       const reviewed = await tx.application.update({
         where: { id },
-        data: { status: 'ACCEPTED', reviewNote: dto.reviewNote, reviewedByUserId: reviewer.id },
+        data: {
+          status: 'ACCEPTED',
+          reviewNote: dto.reviewNote,
+          reviewedByUserId: reviewer.id,
+          acceptedCohortId: dto.cohortId,
+          invitationTokenHash: invitation.tokenHash,
+          invitationExpiresAt: invitation.expiresAt,
+          invitationCreatedAt: new Date(),
+        },
         include: applicationInclude,
       });
       await tx.auditLog.create({
-        data: { actorId: reviewer.id, action: 'APPLICATION_ACCEPTED', entityType: 'Application', entityId: id, metadata: { learnerId: learner.id } },
+        data: { actorId: reviewer.id, action: 'APPLICATION_ACCEPTED', entityType: 'Application', entityId: id, metadata: { cohortId: dto.cohortId } },
       });
       return reviewed;
     });
-    return { application: result, temporaryPassword };
+    return { application: result, setupUrl: this.setupUrl(invitation.rawToken), expiresAt: invitation.expiresAt };
+  }
+
+  async reissueInvitation(id: string, reviewer: AuthUser) {
+    const application = await this.prisma.application.findUnique({ where: { id }, include: { acceptedLearner: { select: { id: true } } } });
+    if (!application) throw new NotFoundException('Application not found');
+    if (application.status !== 'ACCEPTED') throw new BadRequestException('Only accepted applications can receive a registration link');
+    if (application.acceptedLearner) throw new ConflictException('This learner has already completed registration');
+
+    const invitation = this.createInvitation();
+    await this.prisma.$transaction([
+      this.prisma.application.update({
+        where: { id },
+        data: {
+          invitationTokenHash: invitation.tokenHash,
+          invitationExpiresAt: invitation.expiresAt,
+          invitationCreatedAt: new Date(),
+        },
+      }),
+      this.prisma.auditLog.create({ data: { actorId: reviewer.id, action: 'REGISTRATION_INVITATION_REISSUED', entityType: 'Application', entityId: id } }),
+    ]);
+    return { email: application.email, setupUrl: this.setupUrl(invitation.rawToken), expiresAt: invitation.expiresAt };
   }
 
   private audit(actorId: string, action: string, entityId: string, metadata: object) {
     return this.prisma.auditLog.create({ data: { actorId, action, entityType: 'Application', entityId, metadata } });
+  }
+
+  private createInvitation() {
+    const rawToken = randomBytes(32).toString('base64url');
+    return {
+      rawToken,
+      tokenHash: createHash('sha256').update(rawToken).digest('hex'),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    };
+  }
+
+  private setupUrl(token: string) {
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    return `${frontendUrl}/complete-registration?token=${encodeURIComponent(token)}`;
   }
 }

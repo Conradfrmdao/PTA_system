@@ -18,6 +18,7 @@ export type Application = {
   id: string; firstName: string; lastName: string; email: string; phone: string | null; status: string; createdAt: string; reviewNote: string | null;
   program: { id: string; name: string };
   acceptedLearner?: { id: string; status: string } | null;
+  invitationExpiresAt?: string | null;
 };
 export type ApplicationList = { items: Application[]; total: number; page: number; limit: number; totalPages: number };
 
@@ -26,7 +27,8 @@ const unwrap = <T>(request: Promise<{ data: ApiSuccess<T> }>) => request.then(({
 export const workspaceApi = {
   dashboard: () => unwrap(api.get('/academy/dashboard')),
   applications: (status?: string) => unwrap<ApplicationList>(api.get('/applications', { params: status ? { status } : {} })),
-  reviewApplication: (id: string, input: { status: string; reviewNote?: string; cohortId?: string }) => unwrap<{ application: Application; temporaryPassword?: string }>(api.patch(`/applications/${id}/review`, input)),
+  reviewApplication: (id: string, input: { status: string; reviewNote?: string; cohortId?: string }) => unwrap<{ application: Application; setupUrl?: string; expiresAt?: string }>(api.patch(`/applications/${id}/review`, input)),
+  reissueInvitation: (id: string) => unwrap<{ email: string; setupUrl: string; expiresAt: string }>(api.post(`/applications/${id}/invitation`)),
   cohorts: () => unwrap<Cohort[]>(api.get('/academy/cohorts')),
   createCohort: (input: { name: string; programId: string; startDate: string; endDate: string; status?: string }) => unwrap<Cohort>(api.post('/academy/cohorts', input)),
   learners: (cohortId?: string) => unwrap<Learner[]>(api.get('/academy/learners', { params: cohortId ? { cohortId } : {} })),
