@@ -17,7 +17,6 @@ export class AcademyController {
   @Post('cohorts') @Roles('ADMIN') createCohort(@Body() dto: CreateCohortDto) { return this.academy.createCohort(dto); }
   @Get('learners') @Roles('ADMIN', 'MENTOR', 'INSTRUCTOR') learners(@CurrentUser() user: AuthUser, @Query('cohortId') cohortId?: string) { return this.academy.listLearners(user, cohortId); }
   @Patch('learners/:id/cohort') @Roles('ADMIN') assignCohort(@Param('id') id: string, @Body() dto: AssignCohortDto, @CurrentUser() user: AuthUser) { return this.academy.assignCohort(id, dto, user); }
-  @Post('learners/:id/reset-password') @Roles('ADMIN') resetLearnerPassword(@Param('id') id: string, @CurrentUser() user: AuthUser) { return this.academy.resetLearnerPassword(id, user); }
   @Get('mentors') @Roles('ADMIN') mentors() { return this.academy.listMentors(); }
   @Post('cohorts/:id/mentors') @Roles('ADMIN') assignMentor(@Param('id') id: string, @Body() dto: AssignMentorDto, @CurrentUser() user: AuthUser) { return this.academy.assignMentor(id, dto, user); }
 }
